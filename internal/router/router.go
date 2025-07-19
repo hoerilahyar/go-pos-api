@@ -2,6 +2,7 @@ package router
 
 import (
 	"gopos/internal/delivery/http/handler"
+	"gopos/internal/delivery/http/middleware"
 	"gopos/internal/repository"
 	"gopos/internal/usecase"
 
@@ -10,15 +11,16 @@ import (
 )
 
 func LoadRoutes(r *gin.Engine, db *gorm.DB) {
-	userRepo := repository.NewUserRepository(db)
-	authUC := usecase.NewAuthUsecase(userRepo)
-	authHandler := handler.NewAuthHandler(authUC)
 
 	api := r.Group("/api")
 	{
 		api.GET("/ping", func(c *gin.Context) {
 			c.JSON(200, gin.H{"message": "pong"})
 		})
+
+		userRepo := repository.NewUserRepository(db)
+		authUC := usecase.NewAuthUsecase(userRepo)
+		authHandler := handler.NewAuthHandler(authUC)
 
 		auth := api.Group("/auth")
 		{
@@ -27,12 +29,17 @@ func LoadRoutes(r *gin.Engine, db *gorm.DB) {
 		}
 
 		// Optional: User routes jika sudah ada UserHandler
-		// userUC := usecase.NewUserUsecase(userRepo)
-		// userHandler := handler.NewUserHandler(userUC)
-		// users := api.Group("/users")
-		// {
-		//     users.GET("/", userHandler.GetAll)
-		//     users.POST("/", userHandler.Create)
-		// }
+		userUC := usecase.NewUserUsecase(userRepo)
+		userHandler := handler.NewUserHandler(userUC)
+		users := api.Group("/users")
+		users.Use(middleware.AuthMiddleware())
+		{
+			users.GET("", userHandler.List)
+			users.GET("/:id", userHandler.Detail)
+			users.POST("", userHandler.Create)
+			users.PUT("/:id", userHandler.Update)
+			users.DELETE("/:id", userHandler.Delete)
+
+		}
 	}
 }

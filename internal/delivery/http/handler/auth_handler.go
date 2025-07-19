@@ -24,12 +24,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.authUC.Register(&req); err != nil {
+	user, err := h.authUC.Register(&req)
+
+	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, "Register successful")
+	response.Success(c, "Register successful", user)
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {

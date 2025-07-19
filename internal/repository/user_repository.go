@@ -16,9 +16,27 @@ func NewUserRepository(db *gorm.DB) domain.UserRepository {
 	return &userRepository{db}
 }
 
+func (r *userRepository) List() ([]domain.User, error) {
+	var users []domain.User
+	err := r.db.Find(&users).Error
+	return users, err
+}
+
 func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 	var user domain.User
 	err := r.db.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // user not found, return nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.Where("username = ?", username).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // user not found, return nil
@@ -52,16 +70,48 @@ func (r *userRepository) FindByID(id uint) (*domain.User, error) {
 	return &user, nil
 }
 
-func (r *userRepository) Save(user *domain.User) error {
-	return r.db.Create(user).Error
+func (r *userRepository) Save(user *domain.User) (*domain.User, error) {
+	err := r.db.Create(user).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 // ✅ Update user data (name, email, role, etc.)
-func (r *userRepository) Update(user *domain.User) error {
-	return r.db.Save(user).Error
+func (r *userRepository) Update(user *domain.User) (*domain.User, error) {
+	updateData := map[string]interface{}{}
+
+	if user.Username != "" {
+		updateData["username"] = user.Username
+	}
+
+	if user.Name != "" {
+		updateData["name"] = user.Name
+	}
+
+	if user.Email != "" {
+		updateData["email"] = user.Email
+	}
+
+	if user.Password != "" {
+		updateData["password"] = user.Password
+	}
+
+	if err := r.db.Model(&domain.User{}).Where("id = ?", user.ID).Updates(updateData).Error; err != nil {
+		return nil, err
+	}
+
+	// Ambil kembali user setelah update
+	var updatedUser domain.User
+	if err := r.db.First(&updatedUser, user.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return &updatedUser, nil
 }
 
 // ✅ Soft delete user
-func (r *userRepository) Delete(id uint) error {
-	return r.db.Delete(&domain.User{}, id).Error
+func (r *userRepository) Delete(user *domain.User) error {
+	return r.db.Delete(user).Error
 }

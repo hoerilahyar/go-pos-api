@@ -8,9 +8,9 @@ import (
 )
 
 type AuthUsecase interface {
-	Register(user *domain.RegisterRequest) error
+	Register(user *domain.RegisterRequest) (*domain.User, error)
 	Login(email, password string) (*domain.LoginResponse, error)
-	GetProfile(userID uint) (*domain.User, error)
+	LoginInfo(userID uint) (*domain.User, error)
 }
 
 type authUsecase struct {
@@ -24,15 +24,28 @@ func NewAuthUsecase(userRepo domain.UserRepository) AuthUsecase {
 }
 
 // Register new user
-func (u *authUsecase) Register(user *domain.RegisterRequest) error {
+func (u *authUsecase) Register(user *domain.RegisterRequest) (*domain.User, error) {
 	existingUser, _ := u.userRepo.FindByEmail(user.Email)
 	if existingUser != nil {
-		return errors.New("email already registered")
+		return nil, errors.New("email already registered")
+	}
+
+	existingUser, _ = u.userRepo.FindByUsername(user.Username)
+	if existingUser != nil {
+		return nil, errors.New("username already registered")
+	}
+
+	if !utils.IsValidUsername(user.Username) {
+		return nil, errors.New("username must not be an email")
+	}
+
+	if !utils.IsEmail(user.Email) {
+		return nil, errors.New("invalid email format")
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	newUser := &domain.User{
@@ -42,7 +55,12 @@ func (u *authUsecase) Register(user *domain.RegisterRequest) error {
 		Password: hashedPassword,
 	}
 
-	return u.userRepo.Save(newUser)
+	savedUser, err := u.userRepo.Save(newUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return savedUser, nil
 }
 
 // Login and return JWT token
@@ -76,7 +94,7 @@ func (u *authUsecase) Login(username, password string) (*domain.LoginResponse, e
 	return res, nil
 }
 
-// GetProfile returns user data by ID
-func (u *authUsecase) GetProfile(userID uint) (*domain.User, error) {
+// LoginInfo returns user data by ID
+func (u *authUsecase) LoginInfo(userID uint) (*domain.User, error) {
 	return u.userRepo.FindByID(userID)
 }

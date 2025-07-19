@@ -13,22 +13,18 @@ type User struct {
 	Email     string         `gorm:"size:100;unique;not null" json:"email"`
 	Password  string         `gorm:"size:255;not null" json:"password"`
 	Roles     []Role         `gorm:"many2many:user_roles;" json:"roles,omitempty"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
-type AuthUsecase interface {
-	Register(user *User) error
-	Login(username, password string) (*TokenResponse, error)
-	GetProfile(userID uint) (*User, error)
-}
-
 type UserRepository interface {
+	List() ([]User, error)
 	FindByEmail(email string) (*User, error)
+	FindByUsername(username string) (*User, error)
 	FindByEmailOrUsername(username string) (*User, error)
 	FindByID(id uint) (*User, error)
-	Save(user *User) error
-	Update(user *User) error
-	Delete(id uint) error
+	Save(user *User) (*User, error)
+	Update(user *User) (*User, error)
+	Delete(*User) error
 }

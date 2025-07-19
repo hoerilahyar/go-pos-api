@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopos/internal/config"
 	"gopos/internal/router"
 	"log"
@@ -10,6 +11,8 @@ import (
 )
 
 func main() {
+	config.LoadEnv()
+	fmt.Println("test")
 	// Inisialisasi koneksi database
 	db := config.ConnectDB()
 	sqlDB, err := db.DB()

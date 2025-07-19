@@ -1,40 +1,50 @@
 package middleware
 
 import (
-	"net/http"
+	"errors"
+	"gopos/pkg/response"
+	"os"
 	"strings"
 
-	"gopos/pkg/utils"
-
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-// AuthMiddleware validates the JWT token and sets user ID to context.
+var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			response.Error(c, errors.New("Authorization header missing"))
+			c.Abort()
 			return
 		}
 
-		// Expecting "Bearer <token>"
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization format must be Bearer {token}"})
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			response.Error(c, errors.New("Authorization header format must be Bearer {token}"))
+			c.Abort()
 			return
 		}
 
-		token := tokenParts[1]
-		claims, err := utils.ValidateToken(token)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+		tokenString := parts[1]
+		secret := os.Getenv("JWT_SECRET")
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("Unexpected signing method")
+			}
+			return []byte(secret), nil
+		})
+
+		if err != nil || !token.Valid {
+			response.Error(c, errors.New("Invalid token"))
+			c.Abort()
 			return
 		}
 
-		// Save user ID to context
-		c.Set("userID", claims.UserID)
-
+		// You may set claims or user data here
 		c.Next()
 	}
 }
