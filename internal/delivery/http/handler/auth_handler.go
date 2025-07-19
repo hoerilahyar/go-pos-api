@@ -1,0 +1,49 @@
+package handler
+
+import (
+	"gopos/internal/domain"
+	"gopos/internal/usecase"
+	"gopos/pkg/response"
+
+	"github.com/gin-gonic/gin"
+)
+
+type AuthHandler struct {
+	authUC usecase.AuthUsecase
+}
+
+func NewAuthHandler(authUC usecase.AuthUsecase) *AuthHandler {
+	return &AuthHandler{authUC: authUC}
+}
+
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req domain.RegisterRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	if err := h.authUC.Register(&req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, "Register successful")
+}
+
+func (h *AuthHandler) Login(c *gin.Context) {
+	var req domain.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	login, err := h.authUC.Login(req.Username, req.Password)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, "Login successful", login)
+}
