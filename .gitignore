@@ -1,0 +1,43 @@
+# Binary executable
+/myapp
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+/bin/
+/build/
+/out/
+vendor/
+
+# Dependency directories
+/pkg/mod/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# dotenv environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Coverage reports
+coverage.out
+
+# Go test cache
+/testdata/
+
+# Temporary files
+*.tmp
