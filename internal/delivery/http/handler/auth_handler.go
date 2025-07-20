@@ -49,3 +49,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	response.Success(c, "Login successful", login)
 }
+
+func (h *AuthHandler) AuthInfo(c *gin.Context) {
+
+	// response.Success(c, "Login successful", info)
+}

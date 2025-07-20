@@ -74,8 +74,11 @@ func (u *authUsecase) Login(username, password string) (*domain.LoginResponse, e
 		return nil, errors.New("invalid username or password")
 	}
 
+	data := map[string]interface{}{
+		"user_id": user.ID,
+	}
 	// Generate token
-	token, expireAt, err := utils.GenerateToken(user.ID)
+	token, expireAt, err := utils.GenerateToken(data)
 	if err != nil {
 		return nil, err
 	}

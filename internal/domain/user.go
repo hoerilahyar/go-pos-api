@@ -18,6 +18,12 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
 }
 
+// type UserRole struct {
+// 	ID       uint   `gorm:"primaryKey"`
+// 	UserID   uint   `gorm:"column:user_id"`
+// 	RoleName string `gorm:"column:role_name"`
+// }
+
 type UserRepository interface {
 	List() ([]User, error)
 	FindByEmail(email string) (*User, error)

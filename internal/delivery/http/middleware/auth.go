@@ -47,9 +47,31 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// You may set claims or user data here
-		c.Next()
 
-		fmt.Println("DATA :")
-		fmt.Println(utils.JwtAuthInfo(c))
+		claims, err := utils.JwtAuthInfo(c)
+		if err != nil {
+			response.Error(c, errors.New("Invalid token"))
+			c.Abort()
+			return
+		}
+
+		parsedClaims, ok := claims.(map[string]interface{})
+		if !ok {
+			response.Error(c, errors.New("Invalid token claims format"))
+			c.Abort()
+			return
+		}
+
+		userIDFloat, ok := parsedClaims["user_id"].(float64)
+		if !ok {
+			response.Error(c, errors.New("Invalid user_id type"))
+			c.Abort()
+			return
+		}
+
+		userIDStr := fmt.Sprintf("%.0f", userIDFloat)
+		c.Set("user_id", userIDStr)
+
+		c.Next()
 	}
 }

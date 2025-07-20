@@ -5,12 +5,15 @@ import (
 	"gopos/internal/delivery/http/middleware"
 	"gopos/internal/repository"
 	"gopos/internal/usecase"
+	"gopos/pkg/casbin"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func LoadRoutes(r *gin.Engine, db *gorm.DB) {
+
+	enforcer := casbin.InitCasbin(db)
 
 	api := r.Group("/api")
 	{
@@ -33,6 +36,7 @@ func LoadRoutes(r *gin.Engine, db *gorm.DB) {
 		userHandler := handler.NewUserHandler(userUC)
 		users := api.Group("/users")
 		users.Use(middleware.AuthMiddleware())
+		users.Use(middleware.CasbinMiddleware(enforcer, db))
 		{
 			users.GET("", userHandler.List)
 			users.GET("/:id", userHandler.Detail)
@@ -42,4 +46,5 @@ func LoadRoutes(r *gin.Engine, db *gorm.DB) {
 
 		}
 	}
+
 }
