@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"gopos/pkg/response"
+	"gopos/pkg/utils"
 	"os"
 	"strings"
 
@@ -46,5 +48,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// You may set claims or user data here
 		c.Next()
+
+		fmt.Println("DATA :")
+		fmt.Println(utils.JwtAuthInfo(c))
 	}
 }
