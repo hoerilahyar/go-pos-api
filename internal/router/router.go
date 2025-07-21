@@ -45,6 +45,27 @@ func LoadRoutes(r *gin.Engine, db *gorm.DB) {
 			users.DELETE("/:id", userHandler.Delete)
 
 		}
+
+		authorizeRepo := repository.NewAuthorizeRepository(db, enforcer)
+		authorizeUC := usecase.NewAuthorizeUsecase(authorizeRepo)
+		authorizeHandler := handler.NewAuthorizeHandler(authorizeUC)
+		authorize := api.Group("/authorize")
+		authorize.Use(middleware.AuthMiddleware())
+		authorize.Use(middleware.CasbinMiddleware(enforcer, db))
+		{
+			authorize.GET("/policies", authorizeHandler.ListPolicies)
+			authorize.GET("/policy/:id", authorizeHandler.ShowPolicy)
+			authorize.POST("/policy", authorizeHandler.CreatePolicy)
+			authorize.PUT("/policy", authorizeHandler.UpdatePolicy)
+			authorize.DELETE("/policy/:id", authorizeHandler.DeletePolicy)
+
+			authorize.PUT("/assign-role-to-user", authorizeHandler.AssignRoleToUser)
+			authorize.DELETE("/revoke-role-from-user", authorizeHandler.RemoveRoleFromUser)
+			authorize.PUT("/assign-permission-to-role", authorizeHandler.AssignPermissionToRole)
+			authorize.DELETE("/revoke-permission-from-role", authorizeHandler.RemovePermissionFromRole)
+
+			// authorize.GET("/permission", authorizeHandler.GetAllPermissions)
+		}
 	}
 
 }

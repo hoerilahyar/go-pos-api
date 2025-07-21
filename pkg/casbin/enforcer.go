@@ -2,7 +2,6 @@ package casbin
 
 import (
 	"fmt"
-	"gopos/pkg/casbin/policies"
 	"log"
 	"time"
 
@@ -27,7 +26,7 @@ func InitCasbin(db *gorm.DB) *casbin.SyncedEnforcer {
 	}
 
 	// Aktifkan auto-save policy ke DB
-	enforcer.EnableAutoSave(true)
+	// enforcer.EnableAutoSave(true)
 
 	// Mulai auto-reload policy dari DB setiap 1 menit
 	enforcer.StartAutoLoadPolicy(time.Second * 1)
@@ -37,9 +36,9 @@ func InitCasbin(db *gorm.DB) *casbin.SyncedEnforcer {
 		log.Fatalf("Failed to load policy: %v", err)
 	}
 
-	if err := policies.SetupPolicies(enforcer); err != nil {
-		log.Fatalf("failed to setup policies: %v", err)
-	}
+	// if err := policies.SetupPolicies(enforcer); err != nil {
+	// 	log.Fatalf("failed to setup policies: %v", err)
+	// }
 
 	// Simpan ke variabel global jika ingin digunakan di package lain
 	Enforcer = enforcer

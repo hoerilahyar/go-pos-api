@@ -29,7 +29,7 @@ func Success(c *gin.Context, message string, data ...interface{}) {
 }
 
 // Error response
-func Error(c *gin.Context, err error) {
+func Error(c *gin.Context, err error, data ...interface{}) {
 	var errMessage string
 
 	switch {
@@ -41,8 +41,14 @@ func Error(c *gin.Context, err error) {
 		errMessage = "Unexpected error"
 	}
 
-	c.JSON(http.StatusBadRequest, gin.H{
-		"status":  "error",
-		"message": errMessage,
-	})
+	resp := Response{
+		Status:  "error",
+		Message: errMessage,
+	}
+
+	if len(data) > 0 {
+		resp.Data = data[0]
+	}
+
+	c.JSON(http.StatusBadRequest, resp)
 }

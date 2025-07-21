@@ -25,12 +25,12 @@ func CasbinMiddleware(e *casbin.SyncedEnforcer, db *gorm.DB) gin.HandlerFunc {
 
 		sub := fmt.Sprintf("%v", userID)
 
-		fmt.Println("[DEBUG] Enforcing sub =", sub, "obj =", obj, "act =", act)
-		policies, _ := e.GetPolicy()
-		fmt.Println("[DEBUG] Policies:", policies)
+		// fmt.Println("[DEBUG] Enforcing sub =", sub, "obj =", obj, "act =", act)
+		// policies, _ := e.GetPolicy()
+		// fmt.Println("[DEBUG] Policies:", policies)
 
-		groupingPolicies, _ := e.GetGroupingPolicy()
-		fmt.Println("[DEBUG] Grouping Policies:", groupingPolicies)
+		// groupingPolicies, _ := e.GetGroupingPolicy()
+		// fmt.Println("[DEBUG] Grouping Policies:", groupingPolicies)
 
 		allowed, err := e.Enforce(sub, obj, act)
 		if err != nil {

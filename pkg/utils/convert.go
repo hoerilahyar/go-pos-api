@@ -13,6 +13,14 @@ func StrToUint(str string) (uint, error) {
 	return uint(userIdUint), nil
 }
 
+func StrToInt(str string) (int, error) {
+	userIdint, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return int(userIdint), nil
+}
+
 func UintToStr(num uint) string {
 	return strconv.FormatUint(uint64(num), 10)
 }
