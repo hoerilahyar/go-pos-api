@@ -66,6 +66,36 @@ func LoadRoutes(r *gin.Engine, db *gorm.DB) {
 
 			// authorize.GET("/permission", authorizeHandler.GetAllPermissions)
 		}
+
+		productRepo := repository.NewProductRepository(db)
+		productUC := usecase.NewProductUsecase(productRepo)
+		productHandler := handler.NewProductHandler(productUC)
+		products := api.Group("/products")
+		products.Use(middleware.AuthMiddleware())
+		products.Use(middleware.CasbinMiddleware(enforcer, db))
+		{
+			products.GET("", productHandler.FindAll)
+			products.GET("/:id", productHandler.FindByID)
+			products.POST("", productHandler.Create)
+			products.PUT("/:id", productHandler.Update)
+			products.DELETE("/:id", productHandler.Delete)
+
+		}
+
+		categoryRepo := repository.NewCategoryRepository(db)
+		categoryUC := usecase.NewCategoryUsecase(categoryRepo)
+		categoryHandler := handler.NewCategoryHandler(categoryUC)
+		category := api.Group("/category")
+		category.Use(middleware.AuthMiddleware())
+		category.Use(middleware.CasbinMiddleware(enforcer, db))
+		{
+			category.GET("", categoryHandler.FindAll)
+			category.GET("/:id", categoryHandler.FindByID)
+			category.POST("", categoryHandler.Create)
+			category.PUT("/:id", categoryHandler.Update)
+			category.DELETE("/:id", categoryHandler.Delete)
+
+		}
 	}
 
 }
