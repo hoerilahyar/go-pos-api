@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"errors"
 	"gopos/internal/domain"
 	"gopos/internal/repository"
+	appErr "gopos/pkg/errors"
 )
 
 type CategoryUsecase interface {
@@ -36,7 +36,7 @@ func (u *categoryUsecase) FindAll() ([]domain.Category, error) {
 func (u *categoryUsecase) FindByID(id uint64) (*domain.Category, error) {
 	category, err := u.categoryRepo.FindByID(id)
 	if err != nil || category == nil {
-		return nil, errors.New("Category not found")
+		return nil, appErr.Get(appErr.ErrCategoryShow, err)
 	}
 	return category, nil
 }
@@ -48,7 +48,7 @@ func (u *categoryUsecase) Create(category *domain.Category) error {
 func (u *categoryUsecase) Update(category *domain.Category) error {
 	category, err := u.categoryRepo.FindByID(category.ID)
 	if err != nil || category == nil {
-		return errors.New("Category not found")
+		return appErr.Get(appErr.ErrCategoryShow, err)
 	}
 	return u.categoryRepo.Update(category)
 }
@@ -56,7 +56,7 @@ func (u *categoryUsecase) Update(category *domain.Category) error {
 func (u *categoryUsecase) Delete(category *domain.Category) error {
 	category, err := u.categoryRepo.FindByID(category.ID)
 	if err != nil || category == nil {
-		return errors.New("Category not found")
+		return appErr.Get(appErr.ErrCategoryShow, err)
 	}
 	return u.categoryRepo.Delete(category)
 }

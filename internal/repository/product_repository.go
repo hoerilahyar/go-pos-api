@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"gopos/internal/domain"
+	appError "gopos/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -35,7 +36,7 @@ func (r *productRepository) FindPaginated(page, limit int) ([]domain.Product, in
 		Model(&domain.Product{}).
 		Where("deleted_at IS NULL").
 		Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	if err := r.db.
@@ -43,7 +44,7 @@ func (r *productRepository) FindPaginated(page, limit int) ([]domain.Product, in
 		Limit(limit).
 		Offset(offset).
 		Find(&products).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	return products, total, nil
@@ -74,12 +75,12 @@ func (r *productRepository) FindPaginatedWithFilter(page, limit int, filters map
 
 	// Hitung total
 	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	// Ambil data
 	if err := query.Limit(limit).Offset(offset).Find(&products).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	return products, total, nil
@@ -88,7 +89,7 @@ func (r *productRepository) FindPaginatedWithFilter(page, limit int, filters map
 func (r *productRepository) FindAll() ([]domain.Product, error) {
 	var product []domain.Product
 	err := r.db.Where("deleted_at IS NULL").Find(&product).Error
-	return product, err
+	return product, appError.ParseMySQLError(err)
 }
 
 func (r *productRepository) FindByID(id uint64) (*domain.Product, error) {
@@ -98,7 +99,7 @@ func (r *productRepository) FindByID(id uint64) (*domain.Product, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &product, nil
 }
@@ -106,19 +107,23 @@ func (r *productRepository) FindByID(id uint64) (*domain.Product, error) {
 func (r *productRepository) Create(product *domain.Product) error {
 	err := r.db.Create(product).Error
 	if err != nil {
-		return err
+		return appError.ParseMySQLError(err)
 	}
 	return nil
 }
 
 func (r *productRepository) Update(product *domain.Product) error {
 	if err := r.db.Model(&domain.Product{}).Where("id = ? AND deleted_at IS NULL", product.ID).Updates(product).Error; err != nil {
-		return err
+		return appError.ParseMySQLError(err)
 	}
 
 	return nil
 }
 
 func (r *productRepository) Delete(product *domain.Product) error {
-	return r.db.Delete(product).Error
+	err := r.db.Delete(product).Error
+	if err != nil {
+		return appError.ParseMySQLError(err)
+	}
+	return nil
 }

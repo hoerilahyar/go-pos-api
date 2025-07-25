@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"gopos/internal/domain"
+	appError "gopos/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +20,7 @@ func NewUserRepository(db *gorm.DB) domain.UserRepository {
 func (r *userRepository) List() ([]domain.User, error) {
 	var users []domain.User
 	err := r.db.Find(&users).Error
-	return users, err
+	return users, appError.ParseMySQLError(err)
 }
 
 func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
@@ -29,7 +30,7 @@ func (r *userRepository) FindByEmail(email string) (*domain.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // user not found, return nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &user, nil
 }
@@ -41,7 +42,7 @@ func (r *userRepository) FindByUsername(username string) (*domain.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // user not found, return nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &user, nil
 }
@@ -53,7 +54,7 @@ func (r *userRepository) FindByEmailOrUsername(username string) (*domain.User, e
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // user not found, return nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &user, nil
 }
@@ -65,7 +66,7 @@ func (r *userRepository) FindByID(id uint) (*domain.User, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &user, nil
 }
@@ -73,7 +74,7 @@ func (r *userRepository) FindByID(id uint) (*domain.User, error) {
 func (r *userRepository) Save(user *domain.User) (*domain.User, error) {
 	err := r.db.Create(user).Error
 	if err != nil {
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return user, nil
 }
@@ -99,13 +100,13 @@ func (r *userRepository) Update(user *domain.User) (*domain.User, error) {
 	}
 
 	if err := r.db.Model(&domain.User{}).Where("id = ?", user.ID).Updates(updateData).Error; err != nil {
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 
 	// Ambil kembali user setelah update
 	var updatedUser domain.User
 	if err := r.db.First(&updatedUser, user.ID).Error; err != nil {
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 
 	return &updatedUser, nil
@@ -113,5 +114,9 @@ func (r *userRepository) Update(user *domain.User) (*domain.User, error) {
 
 // ✅ Soft delete user
 func (r *userRepository) Delete(user *domain.User) error {
-	return r.db.Delete(user).Error
+	err := r.db.Delete(user).Error
+	if err != nil {
+		return appError.ParseMySQLError(err)
+	}
+	return nil
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"gopos/internal/domain"
 	"gopos/internal/usecase"
+	"gopos/pkg/errors"
 	"gopos/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var req domain.RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, err)
+		response.Error(c, errors.ErrValidation)
 		return
 	}
 

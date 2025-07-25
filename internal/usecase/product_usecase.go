@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"errors"
 	"gopos/internal/domain"
 	"gopos/internal/repository"
+	appErr "gopos/pkg/errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -63,7 +63,7 @@ func (u *productUsecase) FindPaginated(c *gin.Context) ([]domain.Product, int64,
 
 	products, total, err := u.productRepo.FindPaginatedWithFilter(page, limit, filters)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, appErr.Get(appErr.ErrProductList, err)
 	}
 
 	return products, total, nil
@@ -77,7 +77,7 @@ func (u *productUsecase) FindByID(id uint64) (*domain.Product, error) {
 
 	product, err := u.productRepo.FindByID(id)
 	if err != nil || product == nil {
-		return nil, errors.New("Product not found")
+		return nil, appErr.Get(appErr.ErrProductShow, err)
 	}
 	return product, nil
 }
@@ -89,7 +89,7 @@ func (u *productUsecase) Create(product *domain.Product) error {
 func (u *productUsecase) Update(req *domain.ProductUpdate) (*domain.Product, error) {
 	product, err := u.productRepo.FindByID(req.ID)
 	if err != nil || product == nil {
-		return nil, errors.New("Product not found")
+		return nil, appErr.Get(appErr.ErrProductShow, err)
 	}
 
 	if req.Code != "" {

@@ -3,6 +3,7 @@ package usecase
 import (
 	"gopos/internal/domain"
 	"gopos/internal/repository"
+	appErr "gopos/pkg/errors"
 )
 
 type AuthorizeUsecase interface {
@@ -41,7 +42,7 @@ func (uc *authorizeUsecase) GetListPolicy() ([]domain.CasbinRule, error) {
 	rule, err := uc.authorizeRepo.GetAllPolicies()
 
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrPolicyList, err)
 	}
 
 	return rule, nil
@@ -52,7 +53,7 @@ func (uc *authorizeUsecase) ShowPolicy(id int) (domain.CasbinRule, error) {
 	rule, err := uc.authorizeRepo.ShowPolicies(id)
 
 	if err != nil {
-		return domain.CasbinRule{}, err
+		return domain.CasbinRule{}, appErr.Get(appErr.ErrPolicyShow, err)
 	}
 
 	return rule, nil
@@ -62,7 +63,7 @@ func (uc *authorizeUsecase) GetPolicies() ([]domain.CasbinRule, error) {
 
 	policies, err := uc.authorizeRepo.GetAllPolicies()
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrPolicyList, err)
 	}
 
 	return policies, nil
@@ -76,7 +77,7 @@ func (uc *authorizeUsecase) CreatePolicy(req domain.CasbinRule) (bool, error) {
 	ok, err := uc.authorizeRepo.CreatePolicy(req)
 
 	if err != nil || !ok {
-		return false, err
+		return false, appErr.Get(appErr.ErrPolicyCreate, err)
 	}
 
 	return true, nil
@@ -87,7 +88,7 @@ func (uc *authorizeUsecase) UpdatePolicy(req domain.CasbinRule) (bool, error) {
 	ok, err := uc.authorizeRepo.UpdatePolicy(req)
 
 	if err != nil || !ok {
-		return false, err
+		return false, appErr.Get(appErr.ErrPolicyUpdate, err)
 	}
 
 	return true, nil
@@ -97,7 +98,7 @@ func (uc *authorizeUsecase) DeletePolicy(id int) (bool, error) {
 	ok, err := uc.authorizeRepo.DeletePolicy(id)
 
 	if err != nil || !ok {
-		return false, err
+		return false, appErr.Get(appErr.ErrPolicyDelete, err)
 	}
 
 	return true, nil

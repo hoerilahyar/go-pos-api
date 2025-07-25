@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	appErr "gopos/pkg/errors"
 	"os"
 	"strings"
 	"time"
@@ -36,14 +37,14 @@ func GenerateToken(data interface{}) (string, time.Time, error) {
 	default:
 		jsonBytes, err := json.Marshal(v)
 		if err != nil {
-			return "", time.Time{}, fmt.Errorf("failed to marshal data: %w", err)
+			return "", time.Time{}, appErr.Get(appErr.ErrMarshalJson, err)
 		}
 		dataStr = string(jsonBytes)
 	}
 
 	encryptedData, err := Encrypt(dataStr)
 	if err != nil {
-		return "", time.Time{}, err
+		return "", time.Time{}, appErr.Get(appErr.ErrEncrypt, err)
 	}
 
 	claims := CustomClaims{
@@ -56,7 +57,7 @@ func GenerateToken(data interface{}) (string, time.Time, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(jwtSecret)
-	return signedToken, expireAt, err
+	return signedToken, expireAt, appErr.Get(appErr.ErrTokenSignatureInvalid, err)
 }
 
 func ValidateToken(tokenStr string) (*CustomClaims, error) {
@@ -71,36 +72,38 @@ func ValidateToken(tokenStr string) (*CustomClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is what you expect (HS256)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			// return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, appErr.Get(appErr.ErrSignatureMethod, nil)
 		}
 		return jwtSecret, nil
 	})
 
 	if err != nil {
-		fmt.Printf("Error during token parsing: %v\n", err) // More detailed error
 		// Check for specific JWT errors
 		if errors.Is(err, jwt.ErrTokenMalformed) {
-			return nil, errors.New("token malformed")
+			return nil, appErr.Get(appErr.ErrTokenMalformed, err)
 		} else if errors.Is(err, jwt.ErrTokenExpired) || errors.Is(err, jwt.ErrTokenNotValidYet) {
-			return nil, errors.New("token expired or not yet valid") // Combine these
+			return nil, appErr.Get(appErr.ErrTokenNotYetValid, err)
 		} else if errors.Is(err, jwt.ErrTokenSignatureInvalid) {
-			return nil, errors.New("invalid token signature") // Explicitly catch this
+			return nil, appErr.Get(appErr.ErrTokenSignatureInvalid, err)
 		}
-		return nil, errors.New("invalid token: " + err.Error()) // General error with details
+
+		fmt.Printf("Error during token parsing: %v\n", err.Error()) // More detailed error
+		return nil, appErr.Get(appErr.ErrTokenInvalid, err)
 	}
 
 	if !token.Valid {
-		return nil, errors.New("token is not valid after parsing (shouldn't happen with specific error checks)")
+		return nil, appErr.Get(appErr.ErrTokenInvalidAfterParsing, nil)
 	}
 
 	claims, ok := token.Claims.(*CustomClaims)
 	if !ok {
-		return nil, errors.New("could not parse claims") // If type assertion fails
+		return nil, appErr.Get(appErr.ErrTokenClaimsParsingFailed, nil)
 	}
 
 	// Your original expiration check (ParseWithClaims usually handles this, but good to have)
 	if claims.ExpiresAt.Time.Before(time.Now()) {
-		return nil, errors.New("token expired (secondary check)")
+		return nil, appErr.Get(appErr.ErrTokenExpiredSecondary, nil)
 	}
 
 	return claims, nil
@@ -109,24 +112,24 @@ func ValidateToken(tokenStr string) (*CustomClaims, error) {
 func JwtAuthInfo(c *gin.Context) (interface{}, error) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		return nil, errors.New("Authorization header missing")
+		return nil, appErr.Get(appErr.ErrAuthHeaderMissing, nil)
 	}
 
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return nil, errors.New("Invalid Authorization header format")
+		return nil, appErr.Get(appErr.ErrAuthHeaderInvalidFormat, nil)
 	}
 
 	tokenStr := parts[1]
 
 	claims, err := ValidateToken(tokenStr)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrTokenInvalid, err)
 	}
 
 	decryptedData, err := Decrypt(claims.Data)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrDecrypt, err)
 	}
 
 	return CheckIfJSON(decryptedData), nil

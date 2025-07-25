@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"gopos/internal/domain"
+	appError "gopos/pkg/errors"
 
 	"gorm.io/gorm"
 )
@@ -30,11 +31,11 @@ func (r *categoryRepository) FindPaginated(page, limit int) ([]domain.Category, 
 
 	offset := (page - 1) * limit
 	if err := r.db.Model(&domain.Category{}).Where("deleted_at IS NULL").Count(&total).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	if err := r.db.Where("deleted_at IS NULL").Limit(limit).Offset(offset).Find(&categories).Error; err != nil {
-		return nil, 0, err
+		return nil, 0, appError.ParseMySQLError(err)
 	}
 
 	return categories, total, nil
@@ -43,7 +44,7 @@ func (r *categoryRepository) FindPaginated(page, limit int) ([]domain.Category, 
 func (r *categoryRepository) FindAll() ([]domain.Category, error) {
 	var categories []domain.Category
 	err := r.db.Where("deleted_at IS NULL").Find(&categories).Error
-	return categories, err
+	return categories, appError.ParseMySQLError(err)
 }
 
 func (r *categoryRepository) FindByID(id uint64) (*domain.Category, error) {
@@ -53,7 +54,7 @@ func (r *categoryRepository) FindByID(id uint64) (*domain.Category, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 	return &category, nil
 }
@@ -68,11 +69,15 @@ func (r *categoryRepository) Create(category *domain.Category) error {
 
 func (r *categoryRepository) Update(category *domain.Category) error {
 	if err := r.db.Model(&domain.User{}).Where("id = ? AND deleted_at IS NULL", category.ID).Updates(category).Error; err != nil {
-		return err
+		return appError.ParseMySQLError(err)
 	}
 	return nil
 }
 
 func (r *categoryRepository) Delete(category *domain.Category) error {
-	return r.db.Delete(category).Error
+	err := r.db.Delete(category).Error
+	if err != nil {
+		return appError.ParseMySQLError(err)
+	}
+	return nil
 }

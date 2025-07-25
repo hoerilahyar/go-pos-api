@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"errors"
 	"gopos/internal/domain"
+	appErr "gopos/pkg/errors"
 	"gopos/pkg/utils"
 )
 
@@ -31,7 +31,7 @@ func (u *userUsecase) List() ([]domain.User, error) {
 func (u *userUsecase) Detail(userId uint) (*domain.User, error) {
 	foundUser, err := u.userRepo.FindByID(userId)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrUserDetail, err)
 	}
 	return foundUser, nil
 }
@@ -39,25 +39,25 @@ func (u *userUsecase) Detail(userId uint) (*domain.User, error) {
 func (u *userUsecase) Create(user *domain.User) (*domain.User, error) {
 	existingUser, _ := u.userRepo.FindByEmail(user.Email)
 	if existingUser != nil {
-		return nil, errors.New("email already registered")
+		return nil, appErr.Get(appErr.ErrEmailExist, nil)
 	}
 
 	existingUser, _ = u.userRepo.FindByUsername(user.Username)
 	if existingUser != nil {
-		return nil, errors.New("username already registered")
+		return nil, appErr.Get(appErr.ErrUsernameExist, nil)
 	}
 
 	if !utils.IsValidUsername(user.Username) {
-		return nil, errors.New("username must not be an email")
+		return nil, appErr.Get(appErr.ErrUsernameFormat, nil)
 	}
 
 	if !utils.IsEmail(user.Email) {
-		return nil, errors.New("invalid email format")
+		return nil, appErr.Get(appErr.ErrEmailFormat, nil)
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrHashPassword, err)
 	}
 
 	newUser := &domain.User{
@@ -69,7 +69,7 @@ func (u *userUsecase) Create(user *domain.User) (*domain.User, error) {
 
 	savedUser, err := u.userRepo.Save(newUser)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrUserCreate, err)
 	}
 
 	return savedUser, nil
@@ -85,28 +85,28 @@ func (u *userUsecase) Update(user *domain.User) (*domain.User, error) {
 	// Cek email jika diubah
 	existingUserByEmail, _ := u.userRepo.FindByEmail(user.Email)
 	if existingUserByEmail != nil && existingUserByEmail.ID != user.ID {
-		return nil, errors.New("email already registered by another user")
+		return nil, appErr.Get(appErr.ErrEmailExist, nil)
 	}
 
 	// Cek username jika diubah
 	existingUserByUsername, _ := u.userRepo.FindByUsername(user.Username)
 	if existingUserByUsername != nil && existingUserByUsername.ID != user.ID {
-		return nil, errors.New("username already registered by another user")
+		return nil, appErr.Get(appErr.ErrUsernameExist, nil)
 	}
 
 	if !utils.IsValidUsername(user.Username) {
-		return nil, errors.New("username must not be an email")
+		return nil, appErr.Get(appErr.ErrUsernameFormat, nil)
 	}
 
 	if !utils.IsEmail(user.Email) {
-		return nil, errors.New("invalid email format")
+		return nil, appErr.Get(appErr.ErrEmailFormat, nil)
 	}
 
 	// Hash password jika diisi
 	if user.Password != "" {
 		hashedPassword, err := utils.HashPassword(user.Password)
 		if err != nil {
-			return nil, err
+			return nil, appErr.Get(appErr.ErrHashPassword, err)
 		}
 		user.Password = hashedPassword
 	}
@@ -114,7 +114,7 @@ func (u *userUsecase) Update(user *domain.User) (*domain.User, error) {
 	// Update data
 	updatedUser, err := u.userRepo.Update(user)
 	if err != nil {
-		return nil, err
+		return nil, appErr.Get(appErr.ErrUserUpdate, err)
 	}
 
 	return updatedUser, nil
@@ -123,7 +123,7 @@ func (u *userUsecase) Update(user *domain.User) (*domain.User, error) {
 func (u *userUsecase) Delete(id uint) error {
 	user, err := u.userRepo.FindByID(id)
 	if err != nil {
-		return err
+		return appErr.Get(appErr.ErrUserDelete, err)
 	}
 	return u.userRepo.Delete(user)
 }

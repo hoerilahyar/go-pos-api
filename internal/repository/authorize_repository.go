@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"gopos/internal/domain"
+	appError "gopos/pkg/errors"
 
 	"github.com/casbin/casbin/v2"
 	"gorm.io/gorm"
@@ -43,7 +44,7 @@ func (r *authorizeRepository) GetAllPolicies() ([]domain.CasbinRule, error) {
 	var casbinRules []domain.CasbinRule
 	err := r.db.Raw("SELECT * FROM casbin_rule WHERE ptype = 'p'").Scan(&casbinRules).Error
 	if err != nil {
-		return nil, err
+		return nil, appError.ParseMySQLError(err)
 	}
 
 	return casbinRules, nil
@@ -53,7 +54,7 @@ func (r *authorizeRepository) ShowPolicies(id int) (domain.CasbinRule, error) {
 	var casbinRules domain.CasbinRule
 	err := r.db.Raw("SELECT * FROM casbin_rule WHERE id = ?", id).Scan(&casbinRules).Error
 	if err != nil {
-		return casbinRules, err
+		return casbinRules, appError.ParseMySQLError(err)
 	}
 
 	return casbinRules, nil
@@ -67,7 +68,7 @@ func (r *authorizeRepository) CreatePolicy(req domain.CasbinRule) (bool, error) 
 	).Error
 
 	if err != nil {
-		return false, err
+		return false, appError.ParseMySQLError(err)
 	}
 	return true, nil
 }
@@ -80,7 +81,7 @@ func (r *authorizeRepository) UpdatePolicy(req domain.CasbinRule) (bool, error) 
 		`, "p", req.V0, req.V1, req.V2, req.V3, req.V4, req.V5, req.ID).Error
 
 	if err != nil {
-		return false, err
+		return false, appError.ParseMySQLError(err)
 	}
 	return true, nil
 }
@@ -89,7 +90,7 @@ func (r *authorizeRepository) UpdatePolicy(req domain.CasbinRule) (bool, error) 
 func (r *authorizeRepository) DeletePolicy(id int) (bool, error) {
 	result := r.db.Exec("DELETE FROM casbin_rule WHERE id = ?", id)
 	if result.Error != nil {
-		return false, result.Error
+		return false, appError.ParseMySQLError(result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return false, errors.New("no record found")

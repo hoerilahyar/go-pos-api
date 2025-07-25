@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"errors"
 	"gopos/internal/domain"
+	appError "gopos/pkg/errors"
 	"gopos/pkg/utils"
 	"time"
 )
@@ -27,25 +27,25 @@ func NewAuthUsecase(userRepo domain.UserRepository) AuthUsecase {
 func (u *authUsecase) Register(user *domain.RegisterRequest) (*domain.User, error) {
 	existingUser, _ := u.userRepo.FindByEmail(user.Email)
 	if existingUser != nil {
-		return nil, errors.New("email already registered")
+		return nil, appError.ErrEmailExist
 	}
 
 	existingUser, _ = u.userRepo.FindByUsername(user.Username)
 	if existingUser != nil {
-		return nil, errors.New("username already registered")
+		return nil, appError.ErrUsernameExist
 	}
 
 	if !utils.IsValidUsername(user.Username) {
-		return nil, errors.New("username must not be an email")
+		return nil, appError.ErrUsernameFormat
 	}
 
 	if !utils.IsEmail(user.Email) {
-		return nil, errors.New("invalid email format")
+		return nil, appError.ErrEmailFormat
 	}
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		return nil, err
+		return nil, appError.ErrHashPassword
 	}
 
 	newUser := &domain.User{
@@ -57,7 +57,7 @@ func (u *authUsecase) Register(user *domain.RegisterRequest) (*domain.User, erro
 
 	savedUser, err := u.userRepo.Save(newUser)
 	if err != nil {
-		return nil, err
+		return nil, appError.Get(appError.ErrUserCreate, err)
 	}
 
 	return savedUser, nil
@@ -67,11 +67,11 @@ func (u *authUsecase) Register(user *domain.RegisterRequest) (*domain.User, erro
 func (u *authUsecase) Login(username, password string) (*domain.LoginResponse, error) {
 	user, err := u.userRepo.FindByEmailOrUsername(username)
 	if err != nil || user == nil {
-		return nil, errors.New("invalid username or password")
+		return nil, appError.ErrInvalidCredentials
 	}
 
 	if !utils.CheckPasswordHash(password, user.Password) {
-		return nil, errors.New("invalid username or password")
+		return nil, appError.ErrInvalidCredentials
 	}
 
 	data := map[string]interface{}{
@@ -80,7 +80,7 @@ func (u *authUsecase) Login(username, password string) (*domain.LoginResponse, e
 	// Generate token
 	token, expireAt, err := utils.GenerateToken(data)
 	if err != nil {
-		return nil, err
+		return nil, appError.Get(appError.ErrGenerateToken, err)
 	}
 
 	res := &domain.LoginResponse{
